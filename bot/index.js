@@ -25,6 +25,58 @@ async function sendText(to, text) {
 // ── Session store (in-memory) ────────────────────────────────────
 const sessions = {};
 const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api`;
+const SUPPORT_LINK = 'https://link-de-soporte';
+
+// ── FAQ detector ─────────────────────────────────────────────────
+const FAQS = [
+  {
+    triggers: ['hola', 'buenas', 'buenos días', 'buenos dias', 'buenas tardes', 'buenas noches', 'hi', 'hey', 'buen día', 'buen dia'],
+    response: '¡Hola! 👋 Bienvenido al bot oficial de la campaña *Sporade x DGo Raspa y Gana*.\n\nEnvíame tu código raspadito cuando lo tengas listo, o escribe *ayuda* si tienes alguna pregunta.',
+  },
+  {
+    triggers: ['cómo funciona', 'como funciona', 'cómo participo', 'como participo', 'cómo canjeo', 'como canjeo', 'instrucciones', 'pasos', 'mecánica', 'mecanica', 'qué debo hacer', 'que debo hacer', 'cómo es', 'como es'],
+    response: '¡Es muy fácil! 🎯\n\n1️⃣ Compra *12 botellas* de Sporade\n2️⃣ Lleva las 12 etiquetas a una tienda participante\n3️⃣ Recibe tu *tarjeta raspadito*\n4️⃣ Envíame el código aquí\n5️⃣ ¡Listo! Te entrego tu código DGo al instante 🏆',
+  },
+  {
+    triggers: ['qué gano', 'que gano', 'cuál es el premio', 'cual es el premio', 'qué es dgo', 'que es dgo', 'para qué sirve', 'para que sirve', 'qué incluye', 'que incluye', 'premio', 'regalo'],
+    response: '🏆 Ganas *1 mes gratis de DGo* para ver el Mundial sin pagar nada.\n\nDGo es la plataforma de streaming deportivo con todos los partidos del Mundial en vivo. Con tu código lo activas directo en la app o web de DGo.',
+  },
+  {
+    triggers: ['hasta cuándo', 'hasta cuando', 'fecha', 'vigencia', 'cuándo vence', 'cuando vence', 'plazo', 'cuándo termina', 'cuando termina', 'cuándo empieza', 'cuando empieza', 'fechas'],
+    response: '📅 La campaña es válida del *1 de junio al 1 de agosto de 2025*.\n\nAsegúrate de canjear tu código antes de que termine.',
+  },
+  {
+    triggers: ['dónde', 'donde', 'tiendas', 'ciudades', 'dónde consigo', 'donde consigo', 'dónde entrego', 'donde entrego', 'puntos de venta', 'en qué ciudad', 'en que ciudad'],
+    response: '📍 La campaña aplica en *todo Colombia*. Puedes comprar las Sporade en tiendas, supermercados y distribuidores habituales, y entregar tus etiquetas en cualquier punto de venta participante.',
+  },
+  {
+    triggers: ['cuántas botellas', 'cuantas botellas', 'cuántas etiquetas', 'cuantas etiquetas', 'cuánto necesito', 'cuanto necesito', 'cuántos productos', 'cuantos productos', 'cuántas necesito', 'cuantas necesito'],
+    response: 'Necesitas *12 botellas de Sporade* para obtener una tarjeta raspadito. Guarda las 12 etiquetas y preséntelas en una tienda participante.',
+  },
+  {
+    triggers: ['código no funciona', 'codigo no funciona', 'código inválido', 'codigo invalido', 'no reconoce', 'código malo', 'codigo malo', 'no sirve el código', 'no sirve el codigo', 'no acepta'],
+    response: '😕 Si tu código no está funcionando puede ser porque:\n\n• Ya fue canjeado anteriormente\n• Hay un error al escribirlo (verifica mayúsculas y guiones)\n\nSi el problema persiste, contáctanos aquí 👉 ' + SUPPORT_LINK,
+  },
+  {
+    triggers: ['gracias', 'thank you', 'thanks', 'mil gracias', 'muchas gracias', 'perfecto', 'listo', 'excelente', 'genial', 'qué bueno', 'que bueno', 'chévere', 'chevere', 'bacano', 'ya lo usé', 'ya lo use', 'ya lo activé', 'ya lo active'],
+    response: '¡Con mucho gusto! 🙌 Disfruta el Mundial con DGo. ¡Vamos Colombia! 🇨🇴⚽',
+  },
+  {
+    triggers: ['ayuda', 'soporte', 'problema', 'no me llegó', 'no me llego', 'error', 'falla', 'comuníqueme', 'comuniqueme', 'hablar con alguien', 'contacto', 'quiero hablar', 'no funciona'],
+    response: 'Lamentamos el inconveniente 😔 Nuestro equipo de soporte puede ayudarte directamente aquí 👉 ' + SUPPORT_LINK,
+  },
+];
+
+function detectFAQ(input) {
+  const normalized = input.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  for (const faq of FAQS) {
+    for (const trigger of faq.triggers) {
+      const normalizedTrigger = trigger.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      if (normalized.includes(normalizedTrigger)) return faq.response;
+    }
+  }
+  return null;
+}
 
 async function handleMessage({ from, text }) {
   const input = (text || '').trim();
@@ -32,7 +84,14 @@ async function handleMessage({ from, text }) {
 
   console.log(`[${from}] step=${session.step} input="${input}"`);
 
+  // FAQ — responde en cualquier paso si no está en medio de un canje
   if (session.step === 'IDLE') {
+    const faqResponse = detectFAQ(input);
+    if (faqResponse) {
+      await sendText(from, faqResponse);
+      return;
+    }
+
     sessions[from] = { step: 'WAIT_CODE' };
     await sendText(from,
       '¡Hola! Bienvenido a la campaña *Sporade x DGo Raspa y Gana* 🎉\n\nPor favor, envíame el *código* que aparece en tu tarjeta raspadito.'

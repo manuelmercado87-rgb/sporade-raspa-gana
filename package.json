@@ -1,0 +1,19 @@
+{
+  "name": "sporade-raspa-gana",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "bot",
+    "api",
+    "dashboard"
+  ],
+  "scripts": {
+    "bot": "npm run dev --workspace=bot",
+    "api": "npm run dev --workspace=api",
+    "dashboard": "npm run dev --workspace=dashboard",
+    "dev": "concurrently \"npm run bot\" \"npm run api\" \"npm run dashboard\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

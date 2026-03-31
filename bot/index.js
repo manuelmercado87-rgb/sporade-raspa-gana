@@ -51,7 +51,7 @@ async function handleMessage({ from, text }) {
       sessions[from] = { step: 'WAIT_NAME', code };
       await sendText(from, `✅ Código válido. Ahora necesito tu *nombre completo* para registrar el canje.`);
     } catch (e) {
-      console.error('Error validando código:', e.message);
+      console.error('Error validando código:', e.response?.data || e.message);
       await sendText(from, 'Hubo un error validando tu código. Por favor intenta en unos minutos.');
     }
     return;
@@ -75,7 +75,7 @@ async function handleMessage({ from, text }) {
         `🎁 ¡Felicitaciones, *${session.name}*!\n\nTu código DGo es:\n*${data.dgoCode}*\n\nIngrésalo en la app DGo para activar tu mes gratis. ¡Disfrútalo! 🎶`
       );
     } catch (e) {
-      console.error('Error en canje:', e.message);
+      console.error('Error en canje:', e.response?.data || e.message);
       await sendText(from, 'Hubo un error procesando tu canje. Por favor intenta en unos minutos.');
     }
   }
@@ -103,7 +103,7 @@ app.post('/webhook', async (req, res) => {
       await handleMessage({ from: message.from, text: message.text?.body });
     }
   } catch (e) {
-    console.error('Error procesando webhook:', e.message);
+    console.error('Error procesando webhook:', e.response?.data || e.message);
   }
   res.sendStatus(200);
 });

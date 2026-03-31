@@ -107,6 +107,23 @@ async function handleMessage({ from, text }) {
         await sendText(from, `❌ El código *${code}* no es válido o ya fue utilizado. Verifica e intenta de nuevo.`);
         return;
       }
+      // Si ya conocemos nombre y cédula del usuario, saltamos esos pasos
+      if (session.name && session.cedula) {
+        try {
+          const { data: redeemData } = await axios.post(`${API_URL}/redemptions/redeem`, {
+            phone: from, name: session.name, cedula: session.cedula, scratchCode: code,
+          });
+          sessions[from] = { step: 'IDLE', name: session.name, cedula: session.cedula };
+          await sendText(from,
+            `🎁 ¡Felicitaciones, *${session.name}*!\n\nTu código DGo es:\n*${redeemData.dgoCode}*\n\nIngrésalo en la app DGo para activar tu mes gratis. ¡Disfrútalo! 🎶`
+          );
+        } catch (e) {
+          console.error('Error en canje:', e.response?.data || e.message);
+          await sendText(from, 'Hubo un error procesando tu canje. Por favor intenta en unos minutos.');
+        }
+        return;
+      }
+
       sessions[from] = { step: 'WAIT_NAME', code };
       await sendText(from, `✅ Código válido. Ahora necesito tu *nombre completo* para registrar el canje.`);
     } catch (e) {
@@ -129,7 +146,8 @@ async function handleMessage({ from, text }) {
       const { data } = await axios.post(`${API_URL}/redemptions/redeem`, {
         phone: from, name: session.name, cedula: input, scratchCode: session.code,
       });
-      sessions[from] = { step: 'IDLE' };
+      // Conservamos nombre y cédula para futuros canjes
+      sessions[from] = { step: 'IDLE', name: session.name, cedula: input };
       await sendText(from,
         `🎁 ¡Felicitaciones, *${session.name}*!\n\nTu código DGo es:\n*${data.dgoCode}*\n\nIngrésalo en la app DGo para activar tu mes gratis. ¡Disfrútalo! 🎶`
       );

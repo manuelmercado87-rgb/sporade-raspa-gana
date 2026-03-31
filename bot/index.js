@@ -104,11 +104,9 @@ async function handleMessage({ from, text }) {
       return;
     }
 
+    // Si no es FAQ, lo tratamos directamente como un código
     sessions[from] = { ...session, step: 'WAIT_CODE' };
-    await sendText(from,
-      '¡Hola! Bienvenido a la campaña *Sporade x DGo Raspa y Gana* 🎉\n\nPor favor, envíame el *código* que aparece en tu tarjeta raspadito.'
-    );
-    return;
+    // Caemos al bloque WAIT_CODE con el mismo input
   }
 
   if (session.step === 'WAIT_CODE') {

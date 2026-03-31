@@ -80,8 +80,20 @@ function detectFAQ(input) {
 
 async function handleMessage({ from, text }) {
   const input = (text || '').trim();
-  const session = sessions[from] || { step: 'IDLE' };
 
+  // Inicializar sesión desde BD si no existe en memoria
+  if (!sessions[from]) {
+    try {
+      const { data: user } = await axios.get(`${API_URL}/users/${from}`);
+      sessions[from] = user
+        ? { step: 'IDLE', name: user.name, cedula: user.cedula }
+        : { step: 'IDLE' };
+    } catch {
+      sessions[from] = { step: 'IDLE' };
+    }
+  }
+
+  const session = sessions[from];
   console.log(`[${from}] step=${session.step} input="${input}"`);
 
   // FAQ — responde en cualquier paso si no está en medio de un canje
@@ -92,7 +104,7 @@ async function handleMessage({ from, text }) {
       return;
     }
 
-    sessions[from] = { step: 'WAIT_CODE' };
+    sessions[from] = { ...session, step: 'WAIT_CODE' };
     await sendText(from,
       '¡Hola! Bienvenido a la campaña *Sporade x DGo Raspa y Gana* 🎉\n\nPor favor, envíame el *código* que aparece en tu tarjeta raspadito.'
     );
@@ -146,8 +158,9 @@ async function handleMessage({ from, text }) {
       const { data } = await axios.post(`${API_URL}/redemptions/redeem`, {
         phone: from, name: session.name, cedula: input, scratchCode: session.code,
       });
-      // Conservamos nombre y cédula para futuros canjes
+      // Guardar usuario en BD y sesión para futuros canjes
       sessions[from] = { step: 'IDLE', name: session.name, cedula: input };
+      axios.post(`${API_URL}/users`, { phone: from, name: session.name, cedula: input }).catch(() => {});
       await sendText(from,
         `🎁 ¡Felicitaciones, *${session.name}*!\n\nTu código DGo es:\n*${data.dgoCode}*\n\nIngrésalo en la app DGo para activar tu mes gratis. ¡Disfrútalo! 🎶`
       );

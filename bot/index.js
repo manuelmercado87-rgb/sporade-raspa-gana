@@ -176,6 +176,17 @@ async function handleMessage({ from, text }) {
   }
 }
 
+// ── Cola por teléfono (evita condiciones de carrera) ─────────────
+const processing = {};
+
+function enqueue(phone, fn) {
+  const prev = processing[phone] || Promise.resolve();
+  const next = prev.then(fn).catch(() => {});
+  processing[phone] = next;
+  next.finally(() => { if (processing[phone] === next) delete processing[phone]; });
+  return next;
+}
+
 // ── Webhook ──────────────────────────────────────────────────────
 app.get('/webhook', (req, res) => {
   const mode = req.query['hub.mode'];
@@ -195,7 +206,9 @@ app.post('/webhook', async (req, res) => {
   try {
     const message = body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
     if (message?.type === 'text') {
-      await handleMessage({ from: message.from, text: message.text?.body });
+      await enqueue(message.from, () =>
+        handleMessage({ from: message.from, text: message.text?.body })
+      );
     }
   } catch (e) {
     console.error('Error procesando webhook:', e.response?.data || e.message);

@@ -20,6 +20,12 @@ async function sendText(to, text) {
       'Content-Type': 'application/json',
     },
   });
+  // Log mensaje saliente
+  axios.post(`${API_URL}/messages/log`, { phone: to, direction: 'out', text }).catch(() => {});
+}
+
+function logIncoming(phone, text) {
+  axios.post(`${API_URL}/messages/log`, { phone, direction: 'in', text }).catch(() => {});
 }
 
 // ── Session store (in-memory) ────────────────────────────────────
@@ -95,6 +101,7 @@ async function handleMessage({ from, text }) {
 
   const session = sessions[from];
   console.log(`[${from}] step=${session.step} input="${input}"`);
+  logIncoming(from, input);
 
   // FAQ — responde en cualquier paso si no está en medio de un canje
   if (session.step === 'IDLE') {

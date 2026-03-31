@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { LayoutDashboard, List, Upload, LogOut } from 'lucide-react';
+import { LayoutDashboard, List, Upload, LogOut, MessageSquare } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -24,6 +24,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { href: '/dashboard', label: 'Resumen', icon: LayoutDashboard },
     { href: '/dashboard/redemptions', label: 'Redenciones', icon: List },
     { href: '/dashboard/codes', label: 'Cargar códigos', icon: Upload },
+    { href: '/dashboard/conversations', label: 'Conversaciones', icon: MessageSquare },
   ];
 
   return (

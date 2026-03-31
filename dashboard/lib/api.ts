@@ -63,7 +63,29 @@ export const api = {
 
   getDgoStock: () =>
     request<{ total: number; delivered: number; available: number }>('/codes/dgo/stock'),
+
+  getConversations: (page = 1, limit = 50) =>
+    request<{ items: ConversationSummary[]; total: number; page: number; limit: number }>(
+      `/messages?page=${page}&limit=${limit}`
+    ),
+
+  getThread: (phone: string) =>
+    request<Message[]>(`/messages/${phone}`),
 };
+
+export interface ConversationSummary {
+  phone: string;
+  lastMessage: string;
+  total: string;
+}
+
+export interface Message {
+  id: number;
+  phone: string;
+  direction: 'in' | 'out';
+  text: string;
+  timestamp: string;
+}
 
 export interface Redemption {
   id: number;

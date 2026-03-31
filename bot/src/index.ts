@@ -13,7 +13,7 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'sporade-bot' });
 });
 
-const PORT = process.env.BOT_PORT || 3000;
+const PORT = process.env.PORT || process.env.BOT_PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Bot webhook corriendo en puerto ${PORT}`);
 });
